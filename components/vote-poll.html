@@ -1,0 +1,220 @@
+<!--
+  VOTE POLL
+  This is the section where the user will be allowed to vote for up to 4 ideas among the list of all possible ideas.
+-->
+<dom-module id="vote-poll">
+  <style>
+    .submit-btn {
+      padding: 20px 15px;
+    }
+    .submit-btn > button {
+      display: none;
+      width: 100%;
+      font-size: 18px;
+    }
+    .vote-casted {
+      margin-top: 50px;
+      margin-bottom: 20px;
+    }
+  </style>
+
+  <template>
+    <div class="container">
+      <!-- DISPLAY IDEAS FOR VOTE -->
+      <template is="dom-if" if="{{ideasRetrieved}}">
+        <div class="row header">
+          <div class="col-xs-12">
+            <h2>{{campaignConfig.name}}</h2>
+          </div>
+          <div class="col-xs-12">
+            <template is="dom-if" if="{{jury}}">
+              <h3>[[localize('vote.welcomeJury')]]</h3>
+            </template>
+            <h3>[[localize('vote.choseIdeas')]]</h3>
+          </div>
+        </div>
+        <div class="row">
+          <template is="dom-if" if="{{allowVote}}">
+            <div class="col-xs-12 submit-btn">
+              <button class="btn btn-primary btn-raised" on-tap="applyVote">[[localize('vote.submit')]]</button>
+            </div>
+          </template>
+        </div>
+
+        <!-- The ideas -->
+        <div class="row">
+          <div class="col-xs-12 col-sm-6">
+            <template is="dom-repeat" items="{{leftIdeas}}" as="idea">
+              <idea-vote id="[[idea.ideaId]]"
+                         title="[[idea.title]]"
+                         selection="[[idea.selection]]">
+              </idea-vote>
+            </template>
+          </div>
+          <div class="col-xs-12 col-sm-6">
+            <template is="dom-repeat" items="{{rightIdeas}}" as="idea">
+              <idea-vote id="[[idea.ideaId]]"
+                         title="[[idea.title]]"
+                         selection="[[idea.selection]]">
+              </idea-vote>
+            </template>
+          </div>
+        </div>
+
+        <div class="row">
+          <template is="dom-if" if="{{allowVote}}">
+            <div class="col-xs-12 submit-btn">
+              <button class="btn btn-primary btn-raised" on-tap="applyVote">[[localize('vote.submit')]]</button>
+            </div>
+          </template>
+        </div>
+      </template>
+
+      <!-- USER ALREADY VOTED -->
+      <template is="dom-if" if="{{alreadyVoted}}">
+        <div class="row header">
+          <div class="col-xs-12">
+            <h2>[[localize('vote.submitted.title')]]</h2>
+            <h3>[[localize('vote.submitted.text')]]</h3>
+          </div>
+          <div class="col-xs-12 text-center vote-casted">
+            <img src="../images/science.png" alt="Vote submitted">
+          </div>
+        </div>
+      </template>
+    </div>
+  </template>
+
+  <script>
+    Polymer({
+      is: 'vote-poll',
+      properties: {
+        userSelection: {
+          type: Array,
+          value: [],
+          notify: true
+        }
+      },
+      listeners: {
+        'gbislab-vote-selection': 'selectionMade'
+      },
+      // Initialization
+      ready: function() {
+        this.allowVote = false;
+      },
+      // Initialization, bis
+      attached: function() {
+        document.addEventListener('gbislab-access-campaign', function(e) {
+          this.campaignConfig = e.detail;
+          this.campaignKey = e.detail.campaignKey;
+          this.jury = e.detail.jury;
+          this._retrieveAndDisplayIdeas();
+        }.bind(this));
+      },
+      // Use mini-i18n to localize messages
+      localize: function(key) {
+        return window.GBISLabLocalizer.localize(key);
+      },
+      // Add an existing vote on an idea
+      __voteOnIdea: function(ideas, choice) {
+        for (var i = 0; i < ideas.length; i++) {
+          if (ideas[i].ideaId === choice.id) {
+            ideas[i].selection = choice.ranking;
+            return;
+          }
+        }
+      },
+      // Retrieve the ideas for the vote
+      _retrieveAndDisplayIdeas: function() {
+        this.ideasRetrieved = false;
+        window.firebaseUtils.getCampaignIdeas(this.campaignKey, function(ideas) {
+          var ideasData = window.firebaseUtils.objectToArray(ideas);
+          // Check if the user has already voted or not
+          window.firebaseUtils.retrieveUserChoices(this.campaignKey, function(votes) {
+            if (votes !== null && votes.choices && votes.choices.length > 0) {
+              this.alreadyVoted = true;
+            } else {
+              this.ideasRetrieved = true;
+              this.leftIdeas = ideasData.filter(function(val, index) { return index % 2 === 0});
+              this.rightIdeas = ideasData.filter(function(val, index) { return index % 2 !== 0});
+            }
+          }.bind(this));
+        }.bind(this));
+      },
+      // Get the index of the idea in the list.
+      _getIndexForIdea: function(idea) {
+        for (var i = 0; i < this.userSelection.length; i++) {
+          if (this.userSelection[i] && this.userSelection[i].id === idea.id) {
+            return i;
+          }
+        }
+        return -1;
+      },
+      // Update the allow vote flag. To be true, it should not be in read-only mode and have at least one idea selected.
+      _updateAllowVote: function() {
+        var allow = false;
+        if (this.alreadyVoted) {
+          return;
+        }
+        for (var i = 0; i < this.userSelection.length; i++) {
+          if (this.userSelection[i]) {
+            allow = true;
+          }
+        }
+        if (allow) {
+          this.showSubmitButton();
+        } else {
+          this.hideSubmitButton();
+        }
+      },
+
+      showSubmitButton: function() {
+        if (!this.allowVote) {
+          this.allowVote = true;
+          // timeout required, in order to wait the element to be inserted in the DOM by the Polymer template-if.
+          setTimeout(function() {
+            $('.submit-btn > button').fadeIn(500);
+          }, 10);
+        }
+      },
+      hideSubmitButton: function() {
+        if (this.allowVote) {
+          $('.submit-btn > button').fadeOut(500, function() {
+            this.allowVote = false;
+          }.bind(this));
+        }
+      },
+
+      // Selection has been made. This function is called when the event `gbislab-vote-selection` (fired by one idea
+      // component) has been received.
+      selectionMade: function(e, detail) {
+        if (this.alreadyVoted) {
+          // Not allowed to vote!
+          return;
+        }
+        // Check if the idea who triggered the event was already selected.
+        var index = this._getIndexForIdea(detail.idea);
+        if (index !== -1) {
+          this.userSelection[index] = null;
+        }
+        if (detail.selection !== -1) {
+          // The idea was selected (not unselected) then we add it on the list of user selection.
+          this.userSelection[detail.selection - 1] = detail.idea;
+        }
+        this._updateAllowVote();
+      },
+      // Send the vote to the Firebase.
+      applyVote: function() {
+        if (this.alreadyVoted) {
+          // Not allowed to vote!
+          return;
+        }
+        window.firebaseUtils.voteForIdeas(this.campaignKey, this.jury, this.userSelection, function() {
+          this.allowVote = false;
+          this.alreadyVoted = true;
+          this.ideasRetrieved = false;
+        }.bind(this));
+      }
+    });
+  </script>
+</dom-module>

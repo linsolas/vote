@@ -1,0 +1,238 @@
+<!--
+  VOTE RESULTS
+    This is the page where the results are displayed.
+-->
+<dom-module id="vote-results">
+  <style>
+    .black-banner {
+      background-color: #2f333e;
+      padding: 20px;
+      margin-top: 20px;
+      display: none;
+    }
+    .idea-block {
+      display: none;
+    }
+  </style>
+  <template>
+    <template is="dom-if" if="{{ideasRetrieved}}">
+      <div class="container">
+        <div class="row">
+          <div class="col-xs-12">
+            <h2>{{campaignConfig.name}}</h2>
+            <h3>[[localize('results.title')]]</h3>
+          </div>
+        </div>
+
+        <!-- The ideas -->
+        <template is="dom-repeat" items="{{ideas}}" as="idea">
+          <div class="col-xs-12 idea-block">
+            <idea-result id="{{idea.ideaId}}"
+                         title="{{idea.title}}"
+                         results="{{idea.results}}">
+            </idea-result>
+          </div>
+        </template>
+      </div>
+      <div class="container-fluid black-banner">
+        <!-- Export button -->
+        <div class="row">
+          <div class="col-xs-12 text-center">
+            <button class="btn btn-primary" on-tap="exportCSV"><i class="fa fa-download"></i> Export</button>
+          </div>
+        </div>
+      </div>
+    </template>
+  </template>
+  <script>
+    Polymer({
+      is: 'vote-results',
+      listeners: {
+        'gbislab-vote-selection': 'selectionMade'
+      },
+      properties: {
+        ideas: {
+          type: Array,
+          value: [],
+          notify: true
+        },
+        ideasRetrieved: {
+          type: Boolean,
+          value: false
+        }
+      },
+      // Initialization
+      attached: function() {
+        document.addEventListener('gbislab-access-campaign', function(e) {
+          this.campaignConfig = e.detail;
+          this.campaignKey = e.detail.campaignKey;
+          this.jury = e.detail.jury;
+          this.juryFactor = this.campaignConfig.juryFactor || 2;
+          this._retrieveAndDisplayIdeas();
+        }.bind(this));
+      },
+      // Use mini-i18n to localize messages
+      localize: function(key) {
+        return window.GBISLabLocalizer.localize(key);
+      },
+      // Get the ranks of the idea
+      __calculateRanks: function(ideaToEvaluate, ideas) {
+        let ranks = {
+          publik: 1,
+          jury: 1
+        };
+        for (var i = 0; i < ideas.length; i++) {
+          var oneIdea = ideas[i];
+          if (oneIdea.ideaId !== ideaToEvaluate.ideaId) {
+            if (oneIdea.results.points.publik > ideaToEvaluate.results.points.publik) {
+              ranks.publik++;
+            }
+            if (oneIdea.results.points.jury > ideaToEvaluate.results.points.jury) {
+              ranks.jury++;
+            }
+          }
+        }
+        return ranks;
+      },
+      // Calculate the final rank of one idea, considering the final score of each idea.
+      __calculateFinalRank: function(ideaToEvaluate, ideas) {
+        var rank = 1;
+        for (var i = 0; i < ideas.length; i++) {
+          var oneIdea = ideas[i];
+          if (oneIdea.ideaId !== ideaToEvaluate.ideaId) {
+            if (oneIdea.results.scores.total > ideaToEvaluate.results.scores.total) {
+              rank++;
+            }
+          }
+        }
+        return rank;
+      },
+      // Retrieve the ideas and set their scores.
+      _retrieveAndDisplayIdeas: function() {
+        window.firebaseUtils.getCampaignIdeas(this.campaignKey, function(ideas) {
+          var rawIdeas = window.firebaseUtils.objectToArray(ideas);
+
+          // Now retrieve votes...
+          window.firebaseUtils.getCampaignVotes(this.campaignKey, function(votes) {
+            if (this.ideasRetrieved) {
+              // Do not redisplay again...
+              return;
+            }
+            var allPoints = {};
+            var i;
+            for (i = 0; i < votes.length; i++) {
+              var choices = votes[i].choices;
+              for (var j = 0; j < choices.length; j++) {
+                var vote = choices[j];
+                if (!allPoints[vote.id]) {
+                  allPoints[vote.id] = {
+                    publik: 0,
+                    jury: 0
+                  }
+                }
+                // 1st idea choice get 3 points, 2nd 2 points, etc.
+                var pts = 4 - vote.ranking;
+                if (vote.jury) {
+                  allPoints[vote.id].jury += pts;
+                } else {
+                  allPoints[vote.id].publik += pts;
+                }
+              }
+            }
+
+            // Calculate the points (public & jury)
+            for (i = 0; i < rawIdeas.length; i++) {
+              var points = allPoints[rawIdeas[i].ideaId];
+              rawIdeas[i].results = {
+                points: points || {publik: 0, jury: 0}
+              };
+            }
+
+            // Calculate the ranks (public & jury) and final scores (public, jury & total).
+            for (i = 0; i < rawIdeas.length; i++) {
+              rawIdeas[i].results.ranks = this.__calculateRanks(rawIdeas[i], rawIdeas);
+              // Calculate points: 10 points for 1st idea on public (and for jury as well), 9 points for 2nd, etc.
+              rawIdeas[i].results.scores = {
+                publik: Math.max(0, 11 - rawIdeas[i].results.ranks.publik),
+                jury: Math.max(0, 11 - rawIdeas[i].results.ranks.jury)
+              };
+              // Calculate the total points, jury score has a factor
+              rawIdeas[i].results.scores.total = rawIdeas[i].results.scores.publik + (this.juryFactor * rawIdeas[i].results.scores.jury);
+            }
+
+            for (i = 0; i < rawIdeas.length; i++) {
+              rawIdeas[i].results.ranks.total = this.__calculateFinalRank(rawIdeas[i], rawIdeas);
+            }
+            this.ideasRetrieved = true;
+
+            // Sort the ideas by total score
+            this.ideas = rawIdeas.sort(function(a, b) {
+              return b.results.scores.total - a.results.scores.total;
+            });
+
+            // Now animate the display of results...
+            setTimeout(function() {
+              this._showIdeas();
+            }.bind(this), 100);
+          }.bind(this));
+        }.bind(this));
+      },
+
+      _showIdeas: function() {
+        $('.idea-block').each(function(index, elt) {
+          setTimeout(function() {
+            $(elt).show('drop');
+          }, index * 50);
+        });
+        setTimeout(function() {
+          $('.black-banner').show();
+        }, 20 * this.ideas.length * 20);
+      },
+
+      // Get the index of the idea
+      _getIndexForIdea: function(idea) {
+        for (var i = 0; i < this.userSelection.length; i++) {
+          if (this.userSelection[i].id === idea.id) {
+            return i;
+          }
+        }
+        return -1;
+      },
+      // Export data to CSV
+      exportCSV: function() {
+        var str = '';
+        var headers = ['final rank', 'idea', 'total points', 'jury rank', 'public rank', 'jury points', 'public points',
+          '# of jury votes', '# of public votes'];
+        str += headers.join(';') + '\n';
+        for (var i = 0; i < this.ideas.length; i++) {
+          var idea = this.ideas[i];
+          var results = idea.results;
+          var data = [];
+          data.push(results.ranks.total);
+          data.push(idea.title);
+          data.push(results.scores.total);
+          data.push(results.ranks.jury);
+          data.push(results.ranks.publik);
+          data.push(results.scores.jury);
+          data.push(results.scores.publik);
+          data.push(results.points.jury);
+          data.push(results.points.publik);
+          str += data.join(';') + '\n';
+        }
+
+        // Create a fake link that will be automatically clicked to download the CSV data
+        var filename = 'GBISLab-votes_' + moment().format('YYYY-MM-DD_HH-mm-ss') + '.csv';
+        $('<a></a>')
+            .attr('id', 'download-file')
+            .attr('href', 'data:text/csv;charset=utf8,' + encodeURIComponent(str))
+            .attr('download', filename)
+            .css('display', 'none')
+            .appendTo('body');
+
+        $('#download-file').ready(function() {
+          $('#download-file').get(0).click();
+        });
+      }
+    });
+  </script>
+</dom-module>

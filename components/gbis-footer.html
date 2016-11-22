@@ -1,0 +1,34 @@
+<!--
+  GBIS Footer
+  Footer of the page (vote or results).
+-->
+<dom-module id="gbis-footer">
+  <style>
+    .footerbar {
+      margin-top: 50px;
+      bottom: 0;
+      position: absolute;
+      width: 100%;
+    }
+  </style>
+  <template>
+    <footer class="footerbar">
+      <a class="btn back-to-top" onclick="jQuery('html, body').animate({scrollTop: 0}, 'slow');">
+        <i class="fa fa-angle-up"></i><br>
+        <span>Top</span>
+      </a>
+
+      <nav class="super-footer mini-footer">
+        <div class="container">
+          <img src="../images/brand-footer.png" alt="Société Générale">
+        </div>
+      </nav>
+    </footer>
+  </template>
+
+  <script>
+    Polymer({
+      is: 'gbis-footer'
+    });
+  </script>
+</dom-module>

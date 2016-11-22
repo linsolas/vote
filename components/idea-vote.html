@@ -1,0 +1,143 @@
+<!--
+  IDEA VOTE
+  Template of an idea displayed for the vote section.
+    * `title`: title of the idea.
+    * `id`: identity of the idea.
+    * `selection`: selection of the user, if exists.
+-->
+
+<dom-module id="idea-vote">
+  <template>
+    <style>
+      .idea-box {
+        margin-top: 10px;
+        margin-bottom: 20px;
+        border-radius: 5px;
+        border: solid 1px #ccc;
+        box-shadow: 3px 3px 3px rgba(0, 0, 0, .1);
+        padding: 10px;
+      }
+      .idea-box h3 {
+        margin-left: 5px;
+        margin-right: 5px;
+      }
+
+      .selection-wrapper {
+        padding: 10px 20px;
+      }
+      .selection {
+        border-radius: 5px;
+        border: solid 3px #777;
+        color: #777;
+        cursor: pointer;
+        font-size: 25px;
+        height: 60px;
+        padding-top: 10px;
+        text-align: center;
+        transition: border-color .5s, background-color .5s, color .5s;
+      }
+      .selection:not(.selected):hover {
+        background-color: #ccc;
+      }
+
+      .choice-1.selected {
+        background-color: #e4aa26;
+        border-color: #e4aa26;
+      }
+      .choice-2.selected {
+        background-color: #b4c9d4;
+        border-color: #b4c9d4;
+      }
+      .choice-3.selected {
+        background-color: #c57e00;
+        border-color: #c57e00;
+      }
+    </style>
+
+    <div class="idea-box" id="ideaBox">
+      <h3>[[title]]</h3>
+
+      <div id="displayChoices" class="row votes">
+        <div class="col-xs-4 selection-wrapper"><div id="choice-1" class="selection choice-1" data-selection="1" on-tap="selectIdea">1[[sup(1)]]</div></div>
+        <div class="col-xs-4 selection-wrapper"><div id="choice-2" class="selection choice-2" data-selection="2" on-tap="selectIdea">2[[sup(2)]]</div></div>
+        <div class="col-xs-4 selection-wrapper"><div id="choice-3" class="selection choice-3" data-selection="3" on-tap="selectIdea">3[[sup(3)]]</div></div>
+      </div>
+    </div>
+  </template>
+
+  <script>
+    Polymer({
+      is: 'idea-vote',
+      properties: {
+        title: String,
+        id: String,
+        selection: {
+          type: Number,
+          value: -1
+        }
+      },
+      // To add the suffix ('st' / 'nd' / 'th' or 'ère' / 'nde' / 'ème') depending on language.
+      sup: function(val) {
+        if (val) {
+          var suffix = window.GBISLabLocalizer.localize('results.ranks');
+          return suffix[Math.min(val - 1, suffix.length - 1)];
+        }
+        return '';
+      },
+      // Initialization
+      ready: function() {
+        // Should have a better way to do it (cf. https://github.com/Polymer/polymer/issues/1045)?
+        // Cannot use listeners, as we need to listen to events send by sibling components...
+        var wc = this;
+        document.addEventListener('gbislab-vote-selection', function(e) {
+          if (wc.id !== e.detail.idea.id) { // Event sent by another idea
+            if (wc.selection !== -1 && wc.selection === e.detail.selection) {
+              wc.$$('#choice-' + wc.selection).classList.remove('selected');
+              wc.selection = -1;
+            }
+          }
+        });
+      },
+      // Initialization, bis
+      attached: function() {
+        if (this.selection === undefined) {
+          this.selection = -1;
+        } else {
+          var elt = this.$.ideaBox.querySelector('#choice-' + this.selection);
+          if (elt) {
+            elt.classList.add('selected');
+          }
+        }
+      },
+      // Select the idea
+      selectIdea: function(e) {
+        var element = e.target;
+        // Remove CSS for selected item, if exists.
+        if (this.selection !== -1) {
+          var obj = this.$$('#choice-' + this.selection);
+          if (obj) {
+            obj.classList.remove('selected');
+          }
+        }
+        var value = parseInt(element.getAttribute('data-selection'), 10);
+
+        if (this.selection === value) {
+          // Was already selected => remove selection.
+          this.selection = -1;
+        } else {
+          // Select this idea
+          this.selection = value;
+          element.classList.add('selected');
+        }
+        // Fire event (especially for `vote-poll` component)...
+        this.fire('gbislab-vote-selection', {
+          idea: {
+            id: this.id,
+            title: this.title
+          },
+          selection: this.selection
+        });
+      }
+    });
+  </script>
+</dom-module>

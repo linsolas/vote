@@ -1,0 +1,52 @@
+<!--
+  GBIS Header
+  Header of the page (vote or results).
+    * `page`: type of page (`vote` or `results`).
+-->
+<dom-module id="gbis-header">
+  <style>
+    .banner-vote {
+      background: #9ce1f9 url(../images/lab-homepage.png) no-repeat 100% 100%;
+    }
+    .banner-results {
+      background: #9ce1f9 url(../images/open-innovation-podium.png) no-repeat 100% 100%;
+    }
+    .banner {
+      background-size: contain;
+      height: 250px;
+    }
+
+    .banner img {
+      margin-top: 20px;
+    }
+
+    .banner h1 {
+      color: white;
+      font-size: 50px;
+      font-weight: 300;
+    }
+  </style>
+  <template>
+    <div class$="container-fluid banner {{cssBanner}}">
+      <div class="container">
+        <img src="../images/mini-brand.png" alt="Société Générale">
+        <h1>GBIS Lab Votes</h1>
+      </div>
+    </div>
+  </template>
+  <script>
+    Polymer({
+      is: 'gbis-header',
+      properties: {
+        page: String
+      },
+      ready: function() {
+        if (this.page === 'results') {
+          this.cssBanner = 'banner-results';
+        } else {
+          this.cssBanner = 'banner-vote';
+        }
+      }
+    });
+  </script>
+</dom-module>

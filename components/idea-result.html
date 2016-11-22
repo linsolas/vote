@@ -1,0 +1,94 @@
+<!--
+  IDEA VOTE
+  Template of an idea displayed for the final results page.
+    * `title`: title of the idea.
+    * `id`: identity of the idea.
+    * `results`: final results for this idea.
+-->
+<dom-module id="idea-result">
+  <template>
+    <style>
+      .idea-box {
+        margin-top: 10px;
+        margin-bottom: 10px;
+        border-radius: 5px;
+        border: solid 1px #ccc;
+        box-shadow: 3px 3px 3px rgba(0, 0, 0, .1);
+        padding: 10px;
+      }
+
+      .rank {
+        font-size: 30px;
+        color: #23558c;
+        text-align: right;
+        padding-right: 70px;
+        background-size: auto 40px;
+        background-position: center right;
+        background-repeat: no-repeat;
+      }
+
+      .rank.position-1 {
+        color: #e4aa26;
+        background-image: url(../images/gold-medal.png);
+      }
+      .rank.position-2 {
+        color: #b4c9d4;
+        background-image: url(../images/silver-medal.png);
+      }
+      .rank.position-3 {
+        color: #c57e00;
+        background-image: url(../images/bronze-medal.png);
+      }
+      .result-details span {
+        font-size: 16px;
+        margin-right: 20px;
+      }
+
+      .idea-title {
+        font-size: 30px;
+        padding-bottom: 10px;
+      }
+    </style>
+
+    <div class="row idea-box" id="ideaBox">
+      <div class="col-xs-9 col-sm-10">
+        <div class="idea-title">[[title]]</div>
+        <div class="sgb-text-disclaimer result-details">
+          <span><strong>{{results.scores.total}}</strong> [[localize('results.total')]]</span>
+          <span><strong>{{results.ranks.jury}}</strong><sup>{{sup(results.scores.jury)}}</sup> [[localize('results.jury')]]</span>
+          <span><strong>{{results.ranks.publik}}</strong><sup>{{sup(results.scores.publik)}}</sup> [[localize('results.publik')]]</span>
+        </div>
+      </div>
+
+      <div class$="col-xs-3 col-sm-2 rank position-{{results.ranks.total}}">
+        {{results.ranks.total}}{{sup(results.ranks.total)}}
+      </div>
+    </div>
+  </template>
+
+  <script>
+    Polymer({
+      is: 'idea-result',
+      properties: {
+        title: String,
+        id: String,
+        results: {
+          type: Object,
+          notify: true
+        }
+      },
+      // Use mini-i18n to localize messages
+      localize: function(key) {
+        return window.GBISLabLocalizer.localize(key);
+      },
+      // Display the rank in a <sup> tag
+      sup: function(val) {
+        if (val) {
+          var suffix = window.GBISLabLocalizer.localize('results.ranks');
+          return suffix[Math.min(val - 1, suffix.length - 1)];
+        }
+        return '';
+      }
+    });
+  </script>
+</dom-module>

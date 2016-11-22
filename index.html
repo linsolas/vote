@@ -1,0 +1,74 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>GBIS Lab Votes - Vote</title>
+  <link href="images/favicon.ico" rel="icon" type="image/x-icon">
+
+  <!-- import latest release version of all components from polygit -->
+  <script src="https://polygit.org/components/webcomponentsjs/webcomponents-lite.js"></script>
+  <!-- import Polymer-->
+  <link rel="import" href="https://polygit.org/components/polymer/polymer.html">
+
+  <!-- Outdated browsers plugin, to avoid allowing obsolete browsers -->
+  <link rel="stylesheet" href="https://shared.sgmarkets.com/outdated_browsers/outdated-browsers.min.css">
+  <script src="https://shared.sgmarkets.com/outdated_browsers/outdated-browsers.min.js"></script>
+  <script>
+    OutdatedBrowsers.check({
+      notAllowedBrowsers: {
+        ie: '<= 10' // does not allow IE10 or below
+      },
+      page: {
+        type: 'external',
+        applicationTitle: 'Vote website'
+      }
+    });
+  </script>
+
+  <!-- Font awesome -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css">
+  <!-- SG Bootstrap -->
+  <link rel="stylesheet" href="lib/sg-bootstrap/css/sg-bootstrap-standard.min.css">
+  <link href="css/votes.css" rel="stylesheet">
+
+  <script src="js/mini-i18n.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/3.4.1/firebase.js"></script>
+
+  <!-- Polymer components -->
+  <link rel="import" href="components/firebase-connection.html">
+  <link rel="import" href="components/gbis-header.html">
+  <link rel="import" href="components/gbis-footer.html">
+  <link rel="import" href="components/idea-vote.html">
+  <link rel="import" href="components/vote-poll.html">
+  <link rel="import" href="components/pin-code.html">
+</head>
+<body>
+  <!-- FIREBASE CONNECTION -->
+  <firebase-connection
+      api-key="AIzaSyAilJmUQTfIbXDcmvn9_MGZ2mwDgjwyjUI"
+      auth-domain="gbislab-dev.firebaseapp.com"
+      database-url="https://gbislab-dev.firebaseio.com"
+      storage-bucket="">
+  </firebase-connection>
+
+  <!-- HEADER -->
+  <gbis-header title="GBIS Lab votes" page="vote"></gbis-header>
+
+  <!-- MAIN CONTENT -->
+  <div class="main-content">
+    <!-- PIN CODE -->
+    <pin-code page="vote"></pin-code>
+
+    <!-- VOTES -->
+    <vote-poll></vote-poll>
+  </div>
+
+  <!-- FOOTER -->
+  <gbis-footer></gbis-footer>
+
+  <script src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
+  <script src="http://code.jquery.com/ui/1.12.0/jquery-ui.min.js"></script>
+</body>
+</html>
