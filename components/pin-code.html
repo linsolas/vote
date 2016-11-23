@@ -50,7 +50,8 @@
           <div class="pin-code-block">
             <input id="pinCodeInput"
                    type="[[inputType]]"
-                   pattern="\d*"
+                   pattern="[0-9]*"
+                   inputmode="numeric"
                    maxlength="4"
                    class="form-control input-lg pin-code-input">
 
@@ -93,7 +94,7 @@
           this.inputType = 'password';
           this.localizedTitle = this.localize('pinCode.resultsTitle');
         } else {
-          this.inputType = 'text';
+          this.inputType = 'number';
           this.localizedTitle = this.localize('pinCode.voteTitle');
         }
         this.loading = false;
