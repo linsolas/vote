@@ -8,7 +8,7 @@
   <style>
     .pin-code-input {
       letter-spacing: 10px;
-      width: 150px;
+      width: 160px;
       padding: 0;
       margin: 0;
       display: inline;
@@ -22,6 +22,13 @@
       border-color: rgba(82, 168, 236, .6);
       box-shadow: 0 0 8px rgba(82, 168, 236, .6);
     }
+    /* To hide the up & down arrows for input type number on Webkit browsers. */
+    .pin-code-input::-webkit-outer-spin-button,
+    .pin-code-input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0; /* <-- Apparently some margin are still there even though it's hidden */
+    }
+
     .pin-code-block {
       display: inline-block;
     }
@@ -50,9 +57,9 @@
           <div class="pin-code-block">
             <input id="pinCodeInput"
                    type="[[inputType]]"
+                   maxlength="4"
                    pattern="[0-9]*"
                    inputmode="numeric"
-                   maxlength="4"
                    class="form-control input-lg pin-code-input">
 
             <button class="btn btn-primary btn-lg" disabled id="goButton" type="button" on-tap="goVote">
