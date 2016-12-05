@@ -26,6 +26,15 @@
         background-position: center right;
         background-repeat: no-repeat;
       }
+      @media (max-width: 768px) {
+        .rank {
+          font-size: 25px;
+          padding: 0;
+          height: 90px;
+          background-size: auto 35px;
+          background-position: bottom center;
+        }
+      }
 
       .rank.position-1 {
         color: #e4aa26;
@@ -51,7 +60,7 @@
     </style>
 
     <div class="row idea-box" id="ideaBox">
-      <div class="col-xs-9 col-sm-10">
+      <div class="col-xs-10">
         <div class="idea-title">[[title]]</div>
         <div class="sgb-text-disclaimer result-details">
           <span><strong>{{results.scores.total}}</strong> [[localize('results.total')]]</span>
@@ -60,7 +69,7 @@
         </div>
       </div>
 
-      <div class$="col-xs-3 col-sm-2 rank position-{{results.ranks.total}}">
+      <div class$="col-xs-2 rank position-{{results.ranks.total}}">
         {{results.ranks.total}}{{sup(results.ranks.total)}}
       </div>
     </div>
