@@ -118,24 +118,47 @@
               // Do not redisplay again...
               return;
             }
+            this.totalStats = {
+              votes: {
+                publik: 0,
+                jury: 0
+              },
+              voters: {
+                publik: 0,
+                jury: 0
+              }
+            };
             var allPoints = {};
             var i;
             for (i = 0; i < votes.length; i++) {
               var choices = votes[i].choices;
+              if (choices[0].jury) {
+                this.totalStats.voters.jury++;
+              } else {
+                this.totalStats.voters.publik++;
+              }
               for (var j = 0; j < choices.length; j++) {
                 var vote = choices[j];
                 if (!allPoints[vote.id]) {
                   allPoints[vote.id] = {
                     publik: 0,
-                    jury: 0
+                    jury: 0,
+                    count: {
+                      publik: 0,
+                      jury: 0
+                    }
                   }
                 }
                 // 1st idea choice get 3 points, 2nd 2 points, etc.
                 var pts = 4 - vote.ranking;
                 if (vote.jury) {
                   allPoints[vote.id].jury += pts;
+                  allPoints[vote.id].count.jury++;
+                  this.totalStats.votes.jury++;
                 } else {
                   allPoints[vote.id].publik += pts;
+                  allPoints[vote.id].count.publik++;
+                  this.totalStats.votes.publik++;
                 }
               }
             }
@@ -186,7 +209,7 @@
         });
         setTimeout(function() {
           $('.black-banner').show();
-        }, 20 * this.ideas.length * 20);
+        }, 20 + 50 * this.ideas.length);
       },
 
       // Get the index of the idea
@@ -202,7 +225,7 @@
       exportCSV: function() {
         var str = '';
         var headers = ['final rank', 'idea', 'total points', 'jury rank', 'public rank', 'jury points', 'public points',
-          '# of jury votes', '# of public votes'];
+          'Jury points', 'Public points', '# of jury votes', '# of public votes'];
         str += headers.join(';') + '\n';
         for (var i = 0; i < this.ideas.length; i++) {
           var idea = this.ideas[i];
@@ -217,8 +240,21 @@
           data.push(results.scores.publik);
           data.push(results.points.jury);
           data.push(results.points.publik);
+          data.push(results.points.count.jury);
+          data.push(results.points.count.publik);
           str += data.join(';') + '\n';
         }
+        str += '\nGlobal Count;Jury;Public;Total\n';
+
+        let votesJury = this.totalStats.votes.jury;
+        let votesPublik = this.totalStats.votes.publik;
+        let votesTotal = votesJury + votesPublik;
+        str += ['Number of votes', votesJury, votesPublik, votesTotal].join(';') + '\n';
+
+        let votersJury = this.totalStats.voters.jury;
+        let votersPublik = this.totalStats.voters.publik;
+        let votersTotal = votersJury + votersPublik;
+        str += ['Number of unique voters', votersJury, votersPublik, votersTotal].join(';') + '\n';
 
         // Create a fake link that will be automatically clicked to download the CSV data
         var filename = 'GBISLab-votes_' + moment().format('YYYY-MM-DD_HH-mm-ss') + '.csv';
