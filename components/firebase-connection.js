@@ -65,7 +65,7 @@ var FirebaseUtils = function () {
   }, {
     key: 'objectToArray',
     value: function objectToArray(object) {
-      var newObject;
+      var newObject = void 0;
       if (object && (typeof object === 'undefined' ? 'undefined' : _typeof(object)) === 'object') {
         return Object.keys(object).map(function (key) {
           newObject = object[key];
@@ -180,6 +180,7 @@ var FirebaseUtils = function () {
       var data = {
         choices: []
       };
+      var now = Date.now();
       for (var i = 0; i < selectedIdeas.length; i++) {
         var idea = selectedIdeas[i];
         if (idea) {
@@ -187,7 +188,9 @@ var FirebaseUtils = function () {
             id: idea.id,
             title: idea.title,
             ranking: i + 1,
-            jury: isJury
+            jury: isJury,
+            date: now,
+            userAgent: navigator.userAgent
           });
         }
       }
