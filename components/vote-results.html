@@ -37,7 +37,8 @@
       <div class="container-fluid black-banner">
         <!-- Export button -->
         <div class="row">
-          <div class="col-xs-12 text-center">
+          <div class="col-xs-12 text-center sgb-btn-repeat-group">
+            <button class="btn btn-simple" on-tap="changeCode"><i class="fa fa-refresh"></i> Change code</button>
             <button class="btn btn-primary" on-tap="exportCSV"><i class="fa fa-download"></i> Export</button>
           </div>
         </div>
@@ -114,6 +115,7 @@
 
           // Now retrieve votes...
           window.firebaseUtils.getCampaignVotes(this.campaignKey, function(votes) {
+            this.rawVotes = votes;
             if (this.ideasRetrieved) {
               // Do not redisplay again...
               return;
@@ -221,12 +223,18 @@
         }
         return -1;
       },
+      // Remove the pin code of sessionStorage and refresh the page...
+      changeCode: function() {
+        sessionStorage.removeItem('campaign-key');
+        location.reload();
+      },
       // Export data to CSV
       exportCSV: function() {
-        var str = '';
+        var csv = '';
+        // Main export
         var headers = ['final rank', 'idea', 'total points', 'jury rank', 'public rank', 'jury points', 'public points',
           'Jury points', 'Public points', '# of jury votes', '# of public votes'];
-        str += headers.join(';') + '\n';
+        csv += headers.join(';') + '\n';
         for (var i = 0; i < this.ideas.length; i++) {
           var idea = this.ideas[i];
           var results = idea.results;
@@ -240,27 +248,51 @@
           data.push(results.scores.publik);
           data.push(results.points.jury);
           data.push(results.points.publik);
-          data.push(results.points.count.jury);
-          data.push(results.points.count.publik);
-          str += data.join(';') + '\n';
+          if (results.points.count) {
+            data.push(results.points.count.jury);
+            data.push(results.points.count.publik);
+          } else {
+            data.push(0);
+            data.push(0);
+          }
+          csv += data.join(';') + '\n';
         }
-        str += '\nGlobal Count;Jury;Public;Total\n';
 
+        // Global statistics
+        csv += '\nGlobal Count;Jury;Public;Total\n';
         let votesJury = this.totalStats.votes.jury;
         let votesPublik = this.totalStats.votes.publik;
         let votesTotal = votesJury + votesPublik;
-        str += ['Number of votes', votesJury, votesPublik, votesTotal].join(';') + '\n';
+        csv += ['Number of votes', votesJury, votesPublik, votesTotal].join(';') + '\n';
 
         let votersJury = this.totalStats.voters.jury;
         let votersPublik = this.totalStats.voters.publik;
         let votersTotal = votersJury + votersPublik;
-        str += ['Number of unique voters', votersJury, votersPublik, votersTotal].join(';') + '\n';
+        csv += ['Number of unique voters', votersJury, votersPublik, votersTotal].join(';') + '\n';
+
+        // Export every vote
+        csv += '\nVote from;Choice 1;Choice 2;Choice 3;Vote date;User Agent;User IP;Country;Country code\n';
+        for (var j = 0; j < this.rawVotes.length; j++) {
+          var v = this.rawVotes[j];
+          var raw = [null, null, 'no vote', 'no vote', 'no vote', null, null, null, null];
+          raw[0] = v.jury ? 'jury' : 'public';
+          raw[4] = v.date ? moment(v.date).format('YYYY-MM-DD HH:mm:ss') : 'n/a';
+          raw[5] = v.userAgent || 'n/a';
+          raw[6] = v.ip || 'n/a';
+          raw[7] = v.country || 'n/a';
+          raw[8] = v.countryCode || 'n/a';
+          for (var k = 0; k < v.choices.length; k++) {
+            var choice = v.choices[k];
+            raw[choice.ranking] = choice.title;
+          }
+          csv += raw.join(';') + '\n';
+        }
 
         // Create a fake link that will be automatically clicked to download the CSV data
         var filename = 'GBISLab-votes_' + moment().format('YYYY-MM-DD_HH-mm-ss') + '.csv';
         $('<a></a>')
             .attr('id', 'download-file')
-            .attr('href', 'data:text/csv;charset=utf8,' + encodeURIComponent(str))
+            .attr('href', 'data:text/csv;charset=utf8,' + encodeURIComponent(csv))
             .attr('download', filename)
             .css('display', 'none')
             .appendTo('body');
