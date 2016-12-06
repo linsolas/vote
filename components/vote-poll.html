@@ -101,6 +101,7 @@
       // Initialization
       ready: function() {
         this.allowVote = false;
+        this.userMetadata = {};
       },
       // Initialization, bis
       attached: function() {
@@ -109,6 +110,15 @@
           this.campaignKey = e.detail.campaignKey;
           this.jury = e.detail.jury;
           this._retrieveAndDisplayIdeas();
+        }.bind(this));
+        // Try to guess the user country...
+        // Service taken from http://stackoverflow.com/a/28960373/26457
+        $.getJSON('https://freegeoip.net/json/', function(result) {
+          this.userMetadata = {
+            ip: result.ip,
+            country: result.country_name, // eslint-disable-line
+            countryCode: result.country_code // eslint-disable-line
+          };
         }.bind(this));
       },
       // Use mini-i18n to localize messages
@@ -209,7 +219,7 @@
           // Not allowed to vote!
           return;
         }
-        window.firebaseUtils.voteForIdeas(this.campaignKey, this.jury, this.userSelection, function() {
+        window.firebaseUtils.voteForIdeas(this.campaignKey, this.jury, this.userSelection, this.userMetadata, function() {
           this.allowVote = false;
           this.alreadyVoted = true;
           this.ideasRetrieved = false;
