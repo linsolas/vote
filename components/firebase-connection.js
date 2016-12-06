@@ -9,10 +9,10 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 /**
  * FIREBASE CONNECTION
  * Utils class to connect and interact with the Firebase database.
- *   * `api-key`: API key for the Firebase database.
- *   * `auth-domain`: Auth domain for the Firebase database.
- *   * `database-url`: Database URL.
- *   * `storage-bucket`: Storage bucket for the Firebase database.
+ *   - `api-key`: API key for the Firebase database.
+ *   - `auth-domain`: Auth domain for the Firebase database.
+ *   - `database-url`: Database URL.
+ *   - `storage-bucket`: Storage bucket for the Firebase database.
  **/
 var FirebaseUtils = function () {
   function FirebaseUtils() {
@@ -29,6 +29,9 @@ var FirebaseUtils = function () {
         storageBucket: String
       };
     }
+
+    // Initialize the connection to the Firebase database.
+
   }, {
     key: 'ready',
     value: function ready() {
@@ -50,6 +53,7 @@ var FirebaseUtils = function () {
 
     /**
      * Check if the Firebase database is already initialized or not.
+     * @return a boolean indicating if the Firebase connection has already been initialized.
      */
 
   }, {
@@ -60,6 +64,8 @@ var FirebaseUtils = function () {
 
     /**
      * Convert an object to array.
+     * @param  object Object to convert to an array
+     * @return an array containing the keys of the object given as parameter.
      */
 
   }, {
@@ -88,6 +94,9 @@ var FirebaseUtils = function () {
      * }
      * ```
      * and we need to retrieve the `-KUH2q2k22qjvjMgy9PF` key.
+     * @param  code   Code of 4 digits for the campaign, filled by the user.
+     * @param  config Configuration of the campaign.
+     * @return an object with the campaign `key` and a flag to indicates if this is a jury code, or `null` if not found.
      */
 
   }, {
@@ -111,6 +120,8 @@ var FirebaseUtils = function () {
 
     /**
      * Retrieve a campaign configuration from its ID.
+     * @param campaignId ID of the campaign.
+     * @param callback   Callback.
      */
 
   }, {
@@ -139,6 +150,8 @@ var FirebaseUtils = function () {
 
     /**
      * Retrieve the campaign ideas.
+     * @param campaignId ID of the campaign.
+     * @param callback   Callback.
      */
 
   }, {
@@ -155,6 +168,8 @@ var FirebaseUtils = function () {
 
     /**
      * Retrieve the campaign votes.
+     * @param campaignId ID of the campaign.
+     * @param callback   Callback.
      */
 
   }, {
@@ -171,16 +186,26 @@ var FirebaseUtils = function () {
 
     /**
      * Vote for ideas.
-     */
+     * @param campaignId    ID of the campaign.
+     * @param isJury        Is the user a jury?
+     * @param selectedIdeas Array of selection (3 elements, one item per vote).
+     * @param metadata      Metadata of the user (IP, country information).
+     * @param callback      Callback called when the vote has been submitted on Firebase.
+     **/
 
   }, {
     key: 'voteForIdeas',
-    value: function voteForIdeas(campaignId, isJury, selectedIdeas, callback) {
+    value: function voteForIdeas(campaignId, isJury, selectedIdeas, metadata, callback) {
       var ref = 'sessions/session-' + campaignId + '/votes/' + this.uid;
       var data = {
-        choices: []
+        choices: [],
+        jury: isJury,
+        date: Date.now(),
+        userAgent: navigator.userAgent,
+        ip: metadata ? metadata.ip : null,
+        country: metadata ? metadata.country : null,
+        countryCode: metadata ? metadata.countryCode : null
       };
-      var now = Date.now();
       for (var i = 0; i < selectedIdeas.length; i++) {
         var idea = selectedIdeas[i];
         if (idea) {
@@ -188,9 +213,7 @@ var FirebaseUtils = function () {
             id: idea.id,
             title: idea.title,
             ranking: i + 1,
-            jury: isJury,
-            date: now,
-            userAgent: navigator.userAgent
+            jury: isJury
           });
         }
       }
@@ -220,6 +243,8 @@ var FirebaseUtils = function () {
 
     /**
      * Retrieve choices made by the user in the past, or `null` if the user never votes before on that campaign.
+     * @param campaignId ID of the campaign.
+     * @param callback   Callback.
      */
 
   }, {
